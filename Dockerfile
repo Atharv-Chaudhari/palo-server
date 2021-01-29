@@ -11,8 +11,8 @@ COPY . /usr/local/src/palo
 # then create the build configuration with cmake and start the build
 # afterwards install palo and immediatly clean up the build environment to keep
 # the image size small.
-RUN BUILD_DEPENDENCIES='build-essential cmake libboost-all-dev libicu-dev libssl-dev zlib1g-dev libgoogle-perftools-dev libsvn-dev'; \
-    RUNTIME_DEPENDENCIES='libboost-thread1.58.0 libboost-regex1.58.0 libicu55 libssl1.0.0 libtcmalloc-minimal4'; \
+RUN BUILD_DEPENDENCIES='build-essential cmake libboost-all-dev libicu-dev libssl-dev zlib1g-dev libgoogle-perftools-dev'; \
+    RUNTIME_DEPENDENCIES='libboost-thread libboost-regex libicu55 libssl libtcmalloc-minimal'; \
     apt-get update \
     && apt-get install --no-install-recommends -y $BUILD_DEPENDENCIES $RUNTIME_DEPENDENCIES \
     && rm -Rf /var/lib/apt/lists/* \

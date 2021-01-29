@@ -26,25 +26,19 @@
 ###
 ################################################################################
 
+# change palo version and revision here when needed
+set(PALO_MAJOR 5)
+set(PALO_MINOR 1)
+set(REVISION "9999")
+
 # print config message
-message(STATUS "================== Configuring Jedox OLAP Server ==================")
+message(STATUS "================== Configuring PALO Server Version 5.1.x ==================")
 
 # minimum required cmake version
-cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 # set project name
 project("palo" CXX C)
-
-message(STATUS "set olap major version number with: -DMAJOR_VERSION=[Number]")
-message(STATUS "set olap minor version number with: -DMINOR_VERSION=[Number]")
-if(MAJOR_VERSION MATCHES "[0-9]" AND MINOR_VERSION MATCHES "[0-9]")
-    set(PALO_MAJOR ${MAJOR_VERSION})
-    set(PALO_MINOR ${MINOR_VERSION})
-else(MAJOR_VERSION MATCHES "[0-9]" AND MINOR_VERSION MATCHES "[0-9]")
-    # change palo version here when need
-    set(PALO_MAJOR 5)
-    set(PALO_MINOR 1)
-endif(MAJOR_VERSION MATCHES "[0-9]" AND MINOR_VERSION MATCHES "[0-9]")
 
 # set path for extra cmake modules
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/Modules/CMake")
@@ -78,29 +72,6 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 ### check build system
 ################################################################################
 
-if(WIN32)
-option(CMAKE_SUPPRESS_REGENERATION "Suppress regeneration of build scripts during build" ON)
-    if("${CMAKE_GENERATOR}" MATCHES "Win64")
-        set(ARCH_HINT "x86_64")
-        message(STATUS "build system is: ${CMAKE_SYSTEM}-${ARCH_HINT}")
-    else("${CMAKE_GENERATOR}" MATCHES "Win64")
-        set(ARCH_HINT "i386")
-        message(STATUS "build system is: ${CMAKE_SYSTEM}-${ARCH_HINT}")
-    endif("${CMAKE_GENERATOR}" MATCHES "Win64")
-else(WIN32)
-    if("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "x86_64")
-        set(ARCH_HINT "x86_64")
-        set(OUT_LIB_SUFFIX "64")
-        set(CMAKE_LIBRARY_ARCHITECTURE "x86_64-linux-gnu")
-        message(STATUS "build system is: ${CMAKE_SYSTEM}-${ARCH_HINT}")
-    else("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "x86_64")
-        set(ARCH_HINT "i386")
-        set(OUT_LIB_SUFFIX "")
-        set(CMAKE_LIBRARY_ARCHITECTURE "i386-linux-gnu")
-        message(STATUS "build system is: ${CMAKE_SYSTEM}-${ARCH_HINT}")
-    endif("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "x86_64")
-endif(WIN32)
-
 message(STATUS "c compiler is: ${CMAKE_C_COMPILER_ID}")
 message(STATUS "c++ compiler is: ${CMAKE_CXX_COMPILER_ID}")
 
@@ -114,13 +85,11 @@ set(INCLUDES "")
 # libs variables
 set(LIBS "")
 set(OPENSSL_LIBS "")
-set(LIC_LIBS "")
 
 ################################################################################
 ### checks for programs
 ################################################################################
 
-if(NOT WIN32)
 find_package(BISON)
 find_package(FLEX)
 find_program(GPERF_FOUND gperf PATHS /usr/bin /usr/local/bin)
@@ -145,17 +114,11 @@ if(MINUS_C_MINUS_O)
 else(MINUS_C_MINUS_O)
      set(NO_MINUS_C_MINUS_O NO)
 endif(MINUS_C_MINUS_O)
-endif(NOT WIN32)
 
 ################################################################################
 #########################  USER OPTIONS  #######################################
 ################################################################################
 
-################################################################################
-### set project build type only linux
-################################################################################
-
-if(NOT WIN32)
 set(PROJECT_BUILD_TYPE "Release" CACHE STRING "Select a build type")
 set_property(CACHE PROJECT_BUILD_TYPE PROPERTY STRINGS "Release" "Debug" "RelWithDebInfo")
 set(CMAKE_BUILD_TYPE ${PROJECT_BUILD_TYPE})
@@ -169,532 +132,133 @@ else(NOT (CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL Debug O
     message(STATUS "build type - ${CMAKE_BUILD_TYPE}")
 endif(NOT (CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL Debug OR CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo))
 message(STATUS "to change project build type use -DPROJECT_BUILD_TYPE={Release|Debug|RelWithDebInfo}")
-endif(NOT WIN32)
 
-# set build type flags
-if(WIN32)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /D_CONSOLE /D_USRDLL /MP /DSECURITY_WIN32 /EHsc /fp:fast /nologo")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_CONSOLE /D_USRDLL /MP /DSECURITY_WIN32 /EHsc /fp:fast /nologo")
-    # add addition standart lib
-    set(LIBS ${LIBS} secur32.lib ws2_32.lib)
-    # add additional compile flags
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /bigobj /MDd")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /bigobj /MDd")
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi /MD")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi /MD")
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELEASE} /MD")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} /MD")
-else(WIN32)
-    if(CMAKE_BUILD_TYPE STREQUAL Release)
-        set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
-        set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG -std=c++0x")
-    else(CMAKE_BUILD_TYPE STREQUAL Release)
-        if(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
-            set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g3 -ggdb -O2 -D_DEBUG")
-            set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g3 -ggdb -O2 -D_DEBUG -std=c++0x")
-        else(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
-            set(CMAKE_C_FLAGS_DEBUG "-gdwarf-4 -fvar-tracking-assignments -O0 -D_DEBUG")
-            set(CMAKE_CXX_FLAGS_DEBUG "-gdwarf-4 -fvar-tracking-assignments -O0 -D_DEBUG -std=c++0x")
-        endif(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
-    endif(CMAKE_BUILD_TYPE STREQUAL Release)
-endif(WIN32)
+
+if(CMAKE_BUILD_TYPE STREQUAL Release)
+    set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG -std=c++0x")
+else(CMAKE_BUILD_TYPE STREQUAL Release)
+    if(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+        set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g3 -ggdb -O2 -D_DEBUG")
+        set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g3 -ggdb -O2 -D_DEBUG -std=c++0x")
+    else(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+        set(CMAKE_C_FLAGS_DEBUG "-gdwarf-4 -fvar-tracking-assignments -O0 -D_DEBUG")
+        set(CMAKE_CXX_FLAGS_DEBUG "-gdwarf-4 -fvar-tracking-assignments -O0 -D_DEBUG -std=c++0x")
+    endif(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+endif(CMAKE_BUILD_TYPE STREQUAL Release)
 
 ################################################################################
 ### option for 32bit/64bit compile only for linux
 ################################################################################
 
-if(NOT WIN32)
-    option(ENABLE_32BIT "force 32bit compilation [default=OFF]" OFF)
-    if(ENABLE_32BIT STREQUAL ON)
-        set(CMAKE_REQUIRED_FLAGS "-m32")
-        check_c_compiler_flag(-m32 m32C)
-        check_cxx_compiler_flag(-m32 m32CXX)
-        if(m32C AND m32CXX)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
-            set(ARCH_HINT "i386")
-            set(CMAKE_LIBRARY_ARCHITECTURE "i386-linux-gnu")
-            set(OUT_LIB_SUFFIX "")
-            #message(STATUS "librarys are: ${CMAKE_LIBRARY_ARCHITECTURE}")
-        else(m32C AND m32CXX)
-            set(CMAKE_REQUIRED_FLAGS "")
-            set(ENABLE_32BIT OFF)
-            message(STATUS "no support for 32bit compilation!")
-        endif(m32C AND m32CXX)
-    else(ENABLE_32BIT STREQUAL ON)
+option(ENABLE_32BIT "force 32bit compilation [default=OFF]" OFF)
+if(ENABLE_32BIT STREQUAL ON)
+    set(CMAKE_REQUIRED_FLAGS "-m32")
+    check_c_compiler_flag(-m32 m32C)
+    check_cxx_compiler_flag(-m32 m32CXX)
+    if(m32C AND m32CXX)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
+        set(ARCH_HINT "i386")
+        set(CMAKE_LIBRARY_ARCHITECTURE "i386-linux-gnu")
+        set(OUT_LIB_SUFFIX "")
+        #message(STATUS "librarys are: ${CMAKE_LIBRARY_ARCHITECTURE}")
+    else(m32C AND m32CXX)
+        set(CMAKE_REQUIRED_FLAGS "")
         set(ENABLE_32BIT OFF)
-    endif(ENABLE_32BIT STREQUAL ON)
-    message(STATUS "32bit compilation is [${ENABLE_32BIT}]")
-    message(STATUS "to enable/disable force 32bit compilation add -DENABLE_32BIT={ON|OFF}")
-endif(NOT WIN32)
+        message(STATUS "no support for 32bit compilation!")
+    endif(m32C AND m32CXX)
+else(ENABLE_32BIT STREQUAL ON)
+    set(ENABLE_32BIT OFF)
+endif(ENABLE_32BIT STREQUAL ON)
+message(STATUS "32bit compilation is [${ENABLE_32BIT}]")
+message(STATUS "to enable/disable force 32bit compilation add -DENABLE_32BIT={ON|OFF}")
 
 ################################################################################
-### define output build paths only linux
+### define output build paths
 ################################################################################
 
-if(NOT WIN32)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/usr/bin)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/usr/lib${OUT_LIB_SUFFIX})
-    message(STATUS "binary output directory is: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
-    message(STATUS "library output directory is: ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
-endif(NOT WIN32)
-
-################################################################################
-### check for GpuEngine source code
-################################################################################
-
-unset(GPU_ENGINE CACHE)
-find_file(GPU_ENGINE GpuEngine.h "${PROJECT_SOURCE_DIR}/Library/EngineGpu/")
-if(GPU_ENGINE)
-    message(STATUS "GPU Engine source code found")
-    set(GPU_ENGINE ON)
-else(GPU_ENGINE)
-    message(STATUS "GPU Engine source code not found")
-    set(GPU_ENGINE OFF)
-endif(GPU_ENGINE)
-
-################################################################################
-### option for gpu server if gpu source code was founded
-################################################################################
-
-cmake_dependent_option(ENABLE_GPU_SERVER "enable building of gpu server" OFF "GPU_ENGINE" ON)
-
-set(COMPUTE_CAPABILITY "" CACHE STRING "Set CUDA Compute Capability" )
-if(COMPUTE_CAPABILITY STREQUAL "")
-	set(COMPUTE_CAPABILITY_DEFAULT -gencode arch=compute_20,code=sm_20 -gencode arch=compute_35,code=sm_35)
-else()
-	set(COMPUTE_CAPABILITY_DEFAULT ${COMPUTE_CAPABILITY})
-endif()
-
-if(GPU_ENGINE STREQUAL ON)
-if(ARCH_HINT STREQUAL x86_64 AND ENABLE_GPU_SERVER STREQUAL ON)
-message(STATUS "CUDA Compute Capability: ${COMPUTE_CAPABILITY_DEFAULT}")
-    set(ENABLE_GPU_SERVER ON)
-    set(CUDA_64_BIT_DEVICE_CODE ON)
-    set(CUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE ON)
-    find_package(CUDA 5.0 REQUIRED)
-    if(CUDA_FOUND)
-        # setup cuda
-        set(CUDA_PROPAGATE_HOST_FLAGS "OFF")
-        if(WIN32)
-            #set(CUDA_VERBOSE_BUILD ON)
-            set(CL_OPTION_RELEASE "\" /EHsc /W3 /nologo /O2 /Zi /MD \"")
-            set(CL_OPTION_DEBUG "\" /EHsc /W3 /nologo /Zi /RTC1 /MDd  \"")
-            set(CUDA_NVCC_FLAGS_RELEASE ${COMPUTE_CAPABILITY_DEFAULT} -O2 -DNDEBUG -Xcompiler ${CL_OPTION_RELEASE})
-            set(CUDA_NVCC_FLAGS_RELWITHDEBINFO ${COMPUTE_CAPABILITY_DEFAULT} -O2 -DNDEBUG -Xcompiler ${CL_OPTION_RELEASE})
-            set(CUDA_NVCC_FLAGS_DEBUG ${COMPUTE_CAPABILITY_DEFAULT} -O0 -g -G -D_DEBUG -Xcompiler ${CL_OPTION_DEBUG})
-            install(FILES ${CMAKE_SOURCE_DIR}/cudart64_50_35.dll DESTINATION ./)
-            message(STATUS ${CUDA_TOOLKIT_ROOT_DIR})
-            find_library(CUDA_RT_LIB NAMES cudart PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
-            message(STATUS ${CUDA_RT_LIB})
-            if(CUDA_RT_LIB)
-                set(LIBS ${LIBS} cudart.lib)
-                link_directories( ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
-            endif(CUDA_RT_LIB)
-        else(WIN32)
-            set(CUDA_NVCC_FLAGS ${COMPUTE_CAPABILITY_DEFAULT} -O2 -DNDEBUG)
-            if(PROJECT_BUILD_TYPE STREQUAL Debug)
-                set(CUDA_NVCC_FLAGS ${COMPUTE_CAPABILITY_DEFAULT} -O0 -g -G -D_DEBUG)
-            endif(PROJECT_BUILD_TYPE STREQUAL Debug)
-            #message(STATUS ${CUDA_TOOLKIT_ROOT_DIR})
-            find_library(CUDA_RT_LIB NAMES cudart PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
-            #message(STATUS ${CUDA_RT_LIB})
-            if(CUDA_RT_LIB)
-                add_library(cudart SHARED IMPORTED)
-                set_property(TARGET cudart PROPERTY IMPORTED_LOCATION ${CUDA_TOOLKIT_ROOT_DIR}/lib64/libcudart.so)
-                set(LIBS ${LIBS} cudart)
-            endif(CUDA_RT_LIB)
-        endif(WIN32)
-        set(INCLUDES ${INCLUDES} ${CUDA_INCLUDE_DIRS})
-        # Add a special target to clean nvcc generated files.
-        CUDA_BUILD_CLEAN_TARGET()
-    else(CUDA_FOUND)
-        set(ENABLE_GPU_SERVER OFF)
-        message(WARNING "cuda toolkit not found, you need cuda => 5.0")
-    endif(CUDA_FOUND)
-else(ARCH_HINT STREQUAL x86_64 AND ENABLE_GPU_SERVER STREQUAL ON)
-    set(ENABLE_GPU_SERVER OFF)
-endif(ARCH_HINT STREQUAL x86_64 AND ENABLE_GPU_SERVER STREQUAL ON)
-
-message(STATUS "enable building of gpu server is [${ENABLE_GPU_SERVER}]")
-message(STATUS "to enable/disable building of gpu server add -DENABLE_GPU_SERVER={ON|OFF}")
-
-else(GPU_ENGINE STREQUAL ON)
-set(ENABLE_GPU_SERVER OFF)
-endif(GPU_ENGINE STREQUAL ON)
-
-################################################################################
-### check for License extension
-################################################################################
-
-unset(PALO_LIC CACHE)
-find_file(PALO_LIC License.h "${PROJECT_SOURCE_DIR}/Library/License/")
-if(PALO_LIC)
-    message(STATUS "License extension found")
-    set(ENABLE_LICENSE_EXT ON)
-else(PALO_LIC)
-    message(STATUS "License extension not found")
-    set(ENABLE_LICENSE_EXT OFF)
-endif(PALO_LIC)
-
-################################################################################
-### check svn lib directory
-################################################################################
-
-# Manual add svn lib root directory
-set(SVN_LIB_ROOT "" CACHE STRING "path to svn lib root directory" )
-if(SVN_LIB_ROOT)
-    set(SVN_LIB_ROOT_DIR ${SVN_LIB_ROOT})
-endif(SVN_LIB_ROOT)
-
-if(SVN_LIB_ROOT_DIR)
-    message(STATUS "path to svn lib root directory:  ${SVN_LIB_ROOT_DIR}")
-    set(LIB_BOOST_ROOT ${SVN_LIB_ROOT_DIR}/boost)
-    set(LIB_OPENSSL_ROOT ${SVN_LIB_ROOT_DIR}/openssl)
-    set(LIB_PERFTOOLS_ROOT ${SVN_LIB_ROOT_DIR}/perftools)
-    set(LIB_ICU_ROOT ${SVN_LIB_ROOT_DIR}/icu)
-    set(LIB_ZLIB_ROOT ${SVN_LIB_ROOT_DIR}/zlib)
-else(SVN_LIB_ROOT_DIR)
-    message(STATUS "path to svn lib root directory is not defined!")
-    message(STATUS "add it with -DSVN_LIB_ROOT_DIR=[path to svn lib root directory]")
-endif(SVN_LIB_ROOT_DIR)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/usr/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/usr/lib${OUT_LIB_SUFFIX})
+message(STATUS "binary output directory is: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+message(STATUS "library output directory is: ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 
 ################################################################################
 ### check BOOST
 ################################################################################
 
-if(LIB_BOOST_ROOT)
-    set(LIB_BOOST_ROOT_DIR ${LIB_BOOST_ROOT})
-endif(LIB_BOOST_ROOT)
-
-if(LIB_BOOST_ROOT_DIR)
-    if(WIN32)
-        # set boost needed boost library parameters
-        set(Boost_USE_MULTITHREADED ON)
-        set(Boost_USE_STATIC_LIBS   ON)
-        set(BOOST_ROOT ${LIB_BOOST_ROOT_DIR})
-        set(BOOST_LIBRARYDIR ${LIB_BOOST_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT})
-        find_package(Boost 1.51 REQUIRED COMPONENTS thread system chrono regex)
-        if(Boost_FOUND)
-            #message(STATUS ${Boost_INCLUDE_DIRS})
-            #message(STATUS ${BOOST_LIBRARYDIR})
-            set(INCLUDES ${INCLUDES} ${Boost_INCLUDE_DIRS})
-            link_directories(${Boost_LIBRARY_DIRS})
-        else(Boost_FOUND)
-            message(FATAL_ERROR "Boost is not found, add boost with -DLIB_BOOST_ROOT_DIR=[path to BOOST]!")
-        endif(Boost_FOUND)
-    else(WIN32)
-    find_library(BOOST_LIBS NAMES boost_thread boost_system boost_regex PATHS ${LIB_BOOST_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT})
-    if(BOOST_LIBS)
-        add_library(libboost_thread SHARED IMPORTED)
-        add_library(libboost_system SHARED IMPORTED)
-        add_library(libboost_regex SHARED IMPORTED)
-        set_property(TARGET libboost_thread PROPERTY IMPORTED_LOCATION ${LIB_BOOST_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/libboost_thread.so)
-        set_property(TARGET libboost_system PROPERTY IMPORTED_LOCATION ${LIB_BOOST_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/libboost_system.so)
-        set_property(TARGET libboost_regex PROPERTY IMPORTED_LOCATION ${LIB_BOOST_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/libboost_regex.so)
-        set(LIBS ${LIBS} libboost_thread libboost_system libboost_regex)
-        set(INCLUDES ${INCLUDES} ${LIB_BOOST_ROOT_DIR}/include)
-        # set some config variables
-        set(HAVE_LIBBOOST_THREAD YES)
-        set(HAVE_BOOST_THREAD_HPP YES)
-    else(BOOST_LIBS)
-        message(FATAL_ERROR "Boost is not found, add boost with -DLIB_BOOST_ROOT_DIR=[path to BOOST]!")
-    endif(BOOST_LIBS)
-    endif(WIN32)
-else(LIB_BOOST_ROOT_DIR)
-    message(WARNING "Add boost with -DLIB_BOOST_ROOT_DIR=[path to BOOST]!")
-    message(STATUS "Try to use boost installed on system")
-    unset(Boost_FOUND CACHE)
-    find_package( Boost 1.43 REQUIRED COMPONENTS thread system)
-    if(Boost_FOUND)
-        set(Boost_USE_MULTITHREADED ON)
-        set(INCLUDES ${INCLUDES} ${Boost_INCLUDE_DIRS})
-        set(LIBS ${LIBS} boost_thread boost_system boost_regex)
-        set(HAVE_LIBBOOST_THREAD YES)
-        set(HAVE_BOOST_THREAD_HPP YES)
-    else(Boost_FOUND)
-        message(FATAL_ERROR "Boost is not found, install it!")
-    endif(Boost_FOUND)
-endif(LIB_BOOST_ROOT_DIR)
+find_package( Boost 1.43 REQUIRED COMPONENTS thread system)
+if(Boost_FOUND)
+    set(Boost_USE_MULTITHREADED ON)
+    set(INCLUDES ${INCLUDES} ${Boost_INCLUDE_DIRS})
+    set(LIBS ${LIBS} boost_thread boost_system boost_regex)
+    set(HAVE_LIBBOOST_THREAD YES)
+    set(HAVE_BOOST_THREAD_HPP YES)
+else(Boost_FOUND)
+    message(FATAL_ERROR "Boost is not found, install it!")
+endif(Boost_FOUND)
 
 ################################################################################
 ### check openSSL
 ################################################################################
 
-if(LIB_OPENSSL_ROOT)
-    set(LIB_OPENSSL_ROOT_DIR ${LIB_OPENSSL_ROOT})
-endif(LIB_OPENSSL_ROOT)
-
-if(LIB_OPENSSL_ROOT_DIR)
-    if(WIN32)
-        # Add includes and openssl libraries manually
-        # TODO: make it generic
-        find_library(LIB_EAY NAMES libeay32 PATHS ${LIB_OPENSSL_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/static)
-        find_library(SSL_EAY NAMES ssleay32 PATHS ${LIB_OPENSSL_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/static)
-        set(INCLUDES ${INCLUDES}  ${LIB_OPENSSL_ROOT_DIR}/include)
-        set(OPENSSL_LIBS libeay32.lib ssleay32.lib)
-        set(LIBS ${LIBS} libeay32.lib)
-        link_directories(${LIB_OPENSSL_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/static)
-    else(WIN32)
-    find_library(SSL_LIBRARY NAMES ssl crypto PATHS ${LIB_OPENSSL_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT})
-    if(SSL_LIBRARY)
-        add_library(libssl SHARED IMPORTED)
-        add_library(libcrypto SHARED IMPORTED)
-        set_property(TARGET libssl PROPERTY IMPORTED_LOCATION ${LIB_OPENSSL_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/libssl.so)
-        set_property(TARGET libcrypto PROPERTY IMPORTED_LOCATION ${LIB_OPENSSL_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/libcrypto.so)
-        # set some config variables
-        set(HAVE_OPENSSL_SSL_H TRUE)
-        set(HAVE_SSL_LIB TRUE)
-        set(INCLUDES ${INCLUDES}  ${LIB_OPENSSL_ROOT_DIR}/include)
-        set(OPENSSL_LIBS libssl libcrypto)
-        set(LIBS ${LIBS} libcrypto)
-    else(SSL_LIBRARY)
-        message(FATAL_ERROR "OpenSSL not available, add it with -DLIB_OPENSSL_ROOT_DIR=[path to openssl]")
-    endif(SSL_LIBRARY)
-    endif(WIN32)
-else(LIB_OPENSSL_ROOT_DIR)
-    message(WARNING "OpenSSL not available, add it with -DLIB_OPENSSL_ROOT_DIR=[path to openssl]")
-    message(STATUS "try to use openSSL installed on system")
-    # try to find the OpenSSL encryption library
-    # WARNING: not static linking!
-    unset(OPENSSL_FOUND CACHE)
-    find_package(OpenSSL)
-    if(OPENSSL_FOUND)
-        # check if include file exists
-        check_include_file(openssl/ssl.h HAVE_OPENSSL_SSL_H)
-        # checking for SSL_get_error in ssl
-        check_library_exists(ssl SSL_get_error "" HAVE_SSL_LIB)
-        set(INCLUDES ${INCLUDES} ${OpenSSL_INCLUDE_DIRS})
-        set(OPENSSL_LIBS ssl crypto)
-        set(LIBS ${LIBS} crypto)
-    else(OPENSSL_FOUND)
-        message(FATAL_ERROR "OpenSSL not available, install it!")
-    endif(OPENSSL_FOUND)
-endif(LIB_OPENSSL_ROOT_DIR)
+find_package(OpenSSL REQUIRED)
+if(OPENSSL_FOUND)
+    check_include_file_cxx(openssl/ssl.h HAVE_OPENSSL_SSL_H)
+    check_library_exists(ssl SSL_get_error "" HAVE_SSL_LIB)
+    set(INCLUDES ${INCLUDES} ${OpenSSL_INCLUDE_DIRS})
+    set(OPENSSL_LIBS ssl crypto)
+    set(LIBS ${LIBS} crypto)
+else(OPENSSL_FOUND)
+    message(FATAL_ERROR "OpenSSL not available, install it!")
+endif(OPENSSL_FOUND)
 
 ################################################################################
-### enable using of tcmalloc from google perf tools
+### check google perf tools
 ################################################################################
 
-if(NOT WIN32)
-if(LIB_PERFTOOLS_ROOT)
-    set(LIB_PERFTOOLS_ROOT_DIR ${LIB_PERFTOOLS_ROOT})
-endif(LIB_PERFTOOLS_ROOT)
-
-if(LIB_PERFTOOLS_ROOT_DIR)
-    find_library(TCMALLOC NAMES tcmalloc_minimal PATHS ${LIB_PERFTOOLS_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT})
-    if(TCMALLOC)
-        # add tcmalloc_minimal
-        add_library(libtcmalloc_minimal SHARED IMPORTED)
-        set_property(TARGET libtcmalloc_minimal PROPERTY IMPORTED_LOCATION ${LIB_PERFTOOLS_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/libtcmalloc_minimal.so)
-        set(LIBS ${LIBS} libtcmalloc_minimal)
-    else(TCMALLOC)
-        message(FATAL_ERROR "tcmalloc_minimal not available, add it with -DLIB_PERFTOOLS_ROOT_DIR =[path to perftools]")
-    endif(TCMALLOC)
-else(LIB_PERFTOOLS_ROOT_DIR)
-    message(WARNING "tcmalloc not available, add it with -DLIB_PERFTOOLS_ROOT_DIR=[path to perftools]")
-    message(STATUS "try to use tcmalloc_minimal installed on system")
-    # try to find the tcmalloc_minimal library
-    unset(TCMALLOC CACHE)
-    if(ENABLE_32BIT STREQUAL ON AND ARCH_HINT STREQUAL i386)
-        check_library_exists("tcmalloc_minimal -m32" malloc "/lib;/lib32;/usr/lib;/usr/lib32" TCMALLOC)
-    else(ENABLE_32BIT STREQUAL ON AND ARCH_HINT STREQUAL i386)
-        check_library_exists("tcmalloc_minimal" malloc "" TCMALLOC)
-    endif(ENABLE_32BIT STREQUAL ON AND ARCH_HINT STREQUAL i386)
-    #message(STATUS ${TCMALLOC})
-    if (TCMALLOC)
-        set(LIBS ${LIBS} tcmalloc_minimal)
-    else (TCMALLOC)
-        message(FATAL_ERROR "tcmalloc_minimal not available, install it or add it with -DLIB_PERFTOOLS_ROOT_DIR=[path to perftools]!")
-    endif (TCMALLOC)
-endif(LIB_PERFTOOLS_ROOT_DIR)
-endif(NOT WIN32)
-
-################################################################################
-### Enables mode for testing, e.g. Timer
-################################################################################
-option(ENABLE_TEST_MODE "Enables mode for testing, e.g. Timer" OFF)
-mark_as_advanced(ENABLE_TEST_MODE)
-
-################################################################################
-### enable using of profiler from google perf tools
-################################################################################
-
-if(NOT WIN32)
 option(ENABLE_GOOGLE_CPU_PROFILER "add -lprofiler for google cpu profiling [default=OFF]" OFF)
 mark_as_advanced(ENABLE_GOOGLE_CPU_PROFILER)
 
-if(ENABLE_GOOGLE_CPU_PROFILER STREQUAL ON)
-if(LIB_PERFTOOLS_ROOT)
-    set(LIB_PERFTOOLS_ROOT_DIR ${LIB_PERFTOOLS_ROOT})
-endif(LIB_PERFTOOLS_ROOT)
-
-if(LIB_PERFTOOLS_ROOT_DIR)
-    find_library(GPROFILER NAMES profiler ProfilerStart PATHS ${LIB_PERFTOOLS_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT})
-    if(GPROFILER)
-        # add tcmalloc_minimal
-        add_library(libprofiler SHARED IMPORTED)
-        set_property(TARGET libprofiler PROPERTY IMPORTED_LOCATION ${LIB_PERFTOOLS_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/libprofiler.so)
-        set(LIBS ${LIBS} libprofiler)
-    else(GPROFILER)
-        message(FATAL_ERROR "google profiler_minimal not available, add it with -DLIB_PERFTOOLS_ROOT_DIR =[path to perftools]")
-    endif(GPROFILER)
-else(LIB_PERFTOOLS_ROOT_DIR)
-    message(WARNING "google profiler not available, add it with -DLIB_PERFTOOLS_ROOT_DIR=[path to perftools]")
-    message(STATUS "try to use tcmalloc_minimal installed on system")
-    # try to find the tcmalloc_minimal library
-    unset(GPROFILER CACHE)
-    if(ENABLE_32BIT STREQUAL ON AND ARCH_HINT STREQUAL i386)
-        check_library_exists("profiler -m32" ProfilerStart "/lib;/lib32;/usr/lib;/usr/lib32" GPROFILER)
-    else(ENABLE_32BIT STREQUAL ON AND ARCH_HINT STREQUAL i386)
-        check_library_exists("profiler" ProfilerStart "" GPROFILER)
-    endif(ENABLE_32BIT STREQUAL ON AND ARCH_HINT STREQUAL i386)
-    message(STATUS ${GPROFILER})
-    if (GPROFILER)
+find_package(Perftools COMPONENTS)
+if(Perftools_FOUND)
+    set(LIBS ${LIBS} tcmalloc_minimal)
+    if(ENABLE_GOOGLE_CPU_PROFILER STREQUAL ON)
         set(LIBS ${LIBS} profiler)
-    else (GPROFILER)
-        message(FATAL_ERROR "google profiler not available, install it or add it with -DLIB_PERFTOOLS_ROOT_DIR=[path to perftools]!")
-    endif (GPROFILER)
-endif(LIB_PERFTOOLS_ROOT_DIR)
-endif(ENABLE_GOOGLE_CPU_PROFILER STREQUAL ON)
-endif(NOT WIN32)
-
-################################################################################
-### check for udev only linux should be taken from system
-################################################################################
-
-if(NOT WIN32)
-    if(ENABLE_LICENSE_EXT STREQUAL ON)
-        message(STATUS "try to use udev installed on system")
-        # try to find the udev library
-        unset(UDEV CACHE)
-        if(ENABLE_32BIT STREQUAL ON AND ARCH_HINT STREQUAL i386)
-            check_library_exists("udev -m32" udev_device_get_sysname "/lib;/lib32;/usr/lib;/usr/lib32" UDEV)
-        else(ENABLE_32BIT STREQUAL ON AND ARCH_HINT STREQUAL i386)
-            check_library_exists("udev" udev_device_get_sysname "" UDEV)
-        endif(ENABLE_32BIT STREQUAL ON AND ARCH_HINT STREQUAL i386)
-        # message(STATUS ${UDEV})
-        if(UDEV)
-            # libudev is needed only in liblic.palo.so extension
-            #set(LIBS ${LIBS} udev)
-            set(LIC_LIBS ${LIC_LIBS} udev)
-        else(UDEV)
-            message(FATAL_ERROR "udev not available, install it!")
-        endif(UDEV)
-    endif(ENABLE_LICENSE_EXT STREQUAL ON)
-endif(NOT WIN32)
+    endif(ENABLE_GOOGLE_CPU_PROFILER STREQUAL ON)
+else(Perftools_FOUND)
+    message(FATAL_ERROR "Perftools not available, install it!")
+endif(Perftools_FOUND)
 
 ################################################################################
 ### check for icu
 ################################################################################
 
-if(LIB_ICU_ROOT)
-    set(LIB_ICU_ROOT_DIR ${LIB_ICU_ROOT})
-endif(LIB_ICU_ROOT)
-
-if(LIB_ICU_ROOT_DIR)
-    if(WIN32)
-        # Add includes and libraries for icu manuallypw
-        # TODO: make it generic
-        find_library(ICU_IN_LIB NAMES icuin PATHS ${LIB_ICU_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT})
-        find_library(ICU_UC_LIB NAMES icuuc PATHS ${LIB_ICU_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT})
-        set(INCLUDES ${INCLUDES} ${LIB_ICU_ROOT_DIR}/include)
-        set(LIBS ${LIBS} icuin.lib icuuc.lib)
-        link_directories(${LIB_ICU_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT})
-        set(ICU_BIN_DIR ${LIB_ICU_ROOT_DIR}/bin/${CMAKE_SYSTEM_NAME}/${ARCH_HINT})
-        install(FILES
-            ${ICU_BIN_DIR}/icudt49.dll
-            ${ICU_BIN_DIR}/icuin49.dll
-            ${ICU_BIN_DIR}/icuuc49.dll
-            DESTINATION ./)
-    else(WIN32)
-	    find_library(ICU NAMES icuuc icui18n PATHS ${LIB_ICU_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT})
-	    if(ICU)
-	        add_library(libicuuc SHARED IMPORTED)
-	        add_library(libicui18n SHARED IMPORTED)
-	        set_property(TARGET libicuuc PROPERTY IMPORTED_LOCATION ${LIB_ICU_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/libicuuc.so)
-	        set_property(TARGET libicui18n PROPERTY IMPORTED_LOCATION ${LIB_ICU_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/libicui18n.so)
-	        set(INCLUDES ${INCLUDES} ${LIB_ICU_ROOT_DIR}/include)
-	        set(LIBS ${LIBS} libicuuc libicui18n)
-	    else(ICU)
-	        message(FATAL_ERROR "icu not available, add it with -DLIB_ICU_ROOT_DIR =[path to icu]")
-	    endif(ICU)
-    endif(WIN32)
-else(LIB_ICU_ROOT_DIR)
-    message(WARNING "icu not available, add it with -DLIB_ICU_ROOT_DIR=[path to icu]")
-    message(STATUS "try to use icu installed on system")
-    # try to find the icu library
-    unset(ICU_FOUND CACHE)
-    find_package (ICU REQUIRED COMPONENTS uc i18n)
-    if(ICU_FOUND)
-        set(INCLUDES ${INCLUDES} ${ICU_INCLUDE_DIRS})
-        set(LIBS ${LIBS} icuuc icui18n)
-    else(ICU_FOUND)
-        message(FATAL_ERROR "icu not available, install it or add it with -DLIB_ICU_ROOT_DIR =[path to icu]!")
-    endif(ICU_FOUND)
-endif(LIB_ICU_ROOT_DIR)
+find_package (ICU REQUIRED COMPONENTS uc i18n)
+if(ICU_FOUND)
+    set(INCLUDES ${INCLUDES} ${ICU_INCLUDE_DIRS})
+    set(LIBS ${LIBS} icuuc icui18n)
+else(ICU_FOUND)
+    message(FATAL_ERROR "icu not available, install it or add it with -DLIB_ICU_ROOT_DIR =[path to icu]!")
+endif(ICU_FOUND)
 
 ################################################################################
 ### check for zlib
 ################################################################################
 
-if(LIB_ZLIB_ROOT)
-    set(LIB_ZLIB_ROOT_DIR ${LIB_ZLIB_ROOT})
-endif(LIB_ZLIB_ROOT)
-
-if(LIB_ZLIB_ROOT_DIR)
-    if(WIN32)
-#	    find_library(ZLIB_MINI_LIB NAMES libminizip PATHS ${LIB_ZLIB_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT})
-#	    if(ZLIB_MINI_LIB)
-#	        add_library(minizip STATIC IMPORTED)
-#	        set_property(TARGET minizip PROPERTY IMPORTED_LOCATION_RELEASE ${LIB_ZLIB_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/libminizip.lib)
-#	        set_property(TARGET minizip PROPERTY IMPORTED_LOCATION_RELWITHDEBINFO ${LIB_ZLIB_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/libminizip.lib)
-#	        set_property(TARGET minizip PROPERTY IMPORTED_LOCATION_DEBUG ${LIB_ZLIB_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/libminizip_d.lib)
-#	        set(INCLUDES ${INCLUDES} ${LIB_ZLIB_ROOT_DIR}/include)
-#	        set(LIBS ${LIBS} minizip)
-#	    endif(ZLIB_MINI_LIB)
-	    find_library(ZLIB_LIB NAMES zlibstatic PATHS ${LIB_ZLIB_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT})
-	    if(ZLIB_LIB)
-	        add_library(zlib STATIC IMPORTED)
-	        set_property(TARGET zlib PROPERTY IMPORTED_LOCATION_RELEASE ${LIB_ZLIB_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/zlibstatic.lib)
-	        set_property(TARGET zlib PROPERTY IMPORTED_LOCATION_RELWITHDEBINFO ${LIB_ZLIB_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/zlibstatic.lib)
-	        set_property(TARGET zlib PROPERTY IMPORTED_LOCATION_DEBUG ${LIB_ZLIB_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/zlibstaticd.lib)
-	        set(INCLUDES ${INCLUDES} ${LIB_ZLIB_ROOT_DIR}/include)
-	        set(LIBS ${LIBS} zlib)
-	    endif(ZLIB_LIB)
-    else(WIN32)
-	    find_library(ZLIB NAMES z PATHS ${LIB_ZLIB_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT})
-	    if(ZLIB)
-	        add_library(libz SHARED IMPORTED)
-	        set_property(TARGET libz PROPERTY IMPORTED_LOCATION ${LIB_ZLIB_ROOT_DIR}/lib/${CMAKE_SYSTEM_NAME}/${ARCH_HINT}/libz.so)
-	        set(INCLUDES ${INCLUDES} ${LIB_ZLIB_ROOT_DIR}/include)
-	        set(LIBS ${LIBS} libz)
-	    else(ZLIB)
-	        message(FATAL_ERROR "zlib not available, add it with -DLIB_ZLIB_ROOT_DIR =[path to zlib]")
-	    endif(ZLIB)
-    endif(WIN32)
-else(LIB_ZLIB_ROOT_DIR)
-    message(WARNING "zlib not available, add it with -DLIB_ZLIB_ROOT_DIR=[path to zlib]")
-    message(STATUS "trying to use zlib installed on system")
-    # try to find the zlib library
-    unset(ZLIB_FOUND CACHE)
-    find_package(ZLIB REQUIRED)
-    if(ZLIB_FOUND)
-        set(INCLUDES ${INCLUDES} ${ZLIB_INCLUDE_DIRS})
-        set(LIBS ${LIBS} z)
-        message(STATUS ${LIBS})
-        message(STATUS ${ZLIB_INCLUDE_DIRS})
-    else(ZLIB_FOUND)
-        message(FATAL_ERROR "zlib not available, install it or add it with -DLIB_ZLIB_ROOT_DIR =[path to zlib]!")
-    endif(ZLIB_FOUND)
-endif(LIB_ZLIB_ROOT_DIR)
+find_package(ZLIB REQUIRED COMPONENTS z)
+if(ZLIB_FOUND)
+    set(INCLUDES ${INCLUDES} ${ZLIB_INCLUDE_DIRS})
+    set(LIBS ${LIBS} z)
+else(ZLIB_FOUND)
+    message(FATAL_ERROR "zlib not available, install it!")
+endif(ZLIB_FOUND)
 
 ################################################################################
 ### option for enabling the https interface as builtin or shared library
 ################################################################################
 
-# TODO: check this option on windows!!
-set(ENABLE_HTTPS "Module" CACHE STRING "Select to enable building the https interface as builtin or shared module")
+set(ENABLE_HTTPS "Builtin" CACHE STRING "Select to enable building the https interface as builtin or shared module")
 set_property(CACHE ENABLE_HTTPS PROPERTY STRINGS "Builtin" "Module")
 
 if(ENABLE_HTTPS STREQUAL Module)
@@ -716,8 +280,6 @@ message(STATUS "to enable/disable building of https interface add -DENABLE_HTTPS
 ################################################################################
 #########################  ADVANCE USER OPTIONS ################################
 ################################################################################
-
-if(NOT WIN32) # linux only
 
 ################################################################################
 ### set use bison
@@ -781,7 +343,6 @@ endif(ENABLE_VERBOSE STREQUAL ON)
 message(STATUS "enable verbose make files is [${CMAKE_VERBOSE_MAKEFILE}]")
 message(STATUS "to enable/disable verbose build add -DENABLE_VERBOSE={ON/OFF}")
 
-endif(NOT WIN32)
 ################################################################################
 ### option for enable trace
 ################################################################################
@@ -797,7 +358,6 @@ endif()
 message(STATUS "support for extended trace output is [${ENABLE_TRACE_OPTION}]")
 message(STATUS "to enable/disable support for extended trace output add -DENABLE_TRACE_OPTION={ON|OFF}")
 
-if(NOT WIN32)
 ################################################################################
 ### option for gnu profiler
 ################################################################################
@@ -881,12 +441,6 @@ message(STATUS "use pipes is [${ENABLE_PIPE_COMM}]")
 message(STATUS "to enable/disable use of pipes add -DENABLE_PIPE_COMM={ON|OFF}")
 
 ################################################################################
-### enable unittests and doxygen
-################################################################################
-
-# TODO: enable unittests and doxygen
-
-################################################################################
 ### checks for system characteristics
 ################################################################################
 
@@ -894,8 +448,6 @@ message(STATUS "to enable/disable use of pipes add -DENABLE_PIPE_COMM={ON|OFF}")
 test_big_endian(WORDS_BIGENDIAN)
 IF (WORDS_BIGENDIAN)
     ADD_DEFINITIONS("-DPALO_BIG_ENDIAN")
-#ELSE (WORDS_BIGENDIAN)
-#    ADD_DEFINITIONS("-DPALO_LITTLE_ENDIAN")
 ENDIF (WORDS_BIGENDIAN)
 
 # TODO: FIXIT test for DIR_SEPARATOR_CHAR missing
@@ -1009,8 +561,6 @@ else(CMAKE_USE_PTHREADS_INIT)
     message(FATAL_ERROR "please install the pthread library")
 endif(CMAKE_USE_PTHREADS_INIT)
 
-endif(NOT WIN32)
-
 ################################################################################
 ### set project information
 ################################################################################
@@ -1018,21 +568,13 @@ endif(NOT WIN32)
 # palo patch changed automatically
 if(ARCH_HINT STREQUAL i386)
     set(PALO_PATCH 2)
+    set(HTTPS_PATCH ${PALO_PATCH})
     set(ARCH i386)
 else(ARCH_HINT STREQUAL i386)
-    if(ENABLE_GPU_SERVER)
-        set(PALO_PATCH 5)
-    else(ENABLE_GPU_SERVER)
-        set(PALO_PATCH 4)
-    endif(ENABLE_GPU_SERVER)
+    set(PALO_PATCH 4)
+    set(HTTPS_PATCH ${PALO_PATCH})
     set(ARCH amd64)
 endif(ARCH_HINT STREQUAL i386)
-
-if(PALO_PATCH STREQUAL 5)
-    set(HTTPS_PATCH 4)
-else(PALO_PATCH STREQUAL 5)
-    set(HTTPS_PATCH ${PALO_PATCH})
-endif(PALO_PATCH STREQUAL 5)
 
 # set package
 set(PACKAGE "palo")
@@ -1047,18 +589,6 @@ set(PACKAGE_URL "www.jedox.com")
 ### find subversion client to set right build number
 ################################################################################
 
-set(REVISION "0000")
-if(EXISTS ${PROJECT_SOURCE_DIR}/.svn OR EXISTS ${PROJECT_SOURCE_DIR}/../../../.svn)
-    find_package(Subversion)
-    if(Subversion_FOUND)
-        Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Source)
-        set(REVISION "${Source_WC_LAST_CHANGED_REV}")
-        message(STATUS "Current revison number: ${REVISION}")
-    else(Subversion_FOUND)
-        message(WARNING "Please install subversion to get right revision number!")
-        set(REVISION "0000")
-    endif(Subversion_FOUND)
-endif()
 file(WRITE ${CMAKE_BINARY_DIR}/olap_revision.txt ${REVISION})
 
 ################################################################################
@@ -1066,15 +596,6 @@ file(WRITE ${CMAKE_BINARY_DIR}/olap_revision.txt ${REVISION})
 ################################################################################
 
 configure_file(${PROJECT_SOURCE_DIR}/Config/build.h.in.cmake ${CMAKE_BINARY_DIR}/Config/build.h)
-
-# update resource files
-if(WIN32)
-    configure_file(${PROJECT_SOURCE_DIR}/Resource/palohttpslib.rc.cmake ${CMAKE_BINARY_DIR}/Resource/palohttpslib.rc)
-    configure_file(${PROJECT_SOURCE_DIR}/Resource/paloserver.rc.cmake ${CMAKE_BINARY_DIR}/Resource/paloserver.rc)
-    configure_file(${PROJECT_SOURCE_DIR}/Resource/paloserverlib.rc.cmake ${CMAKE_BINARY_DIR}/Resource/paloserverlib.rc)
-endif(WIN32)
-
-if(NOT WIN32)
 
 ################################################################################
 ### prepare includes and source directories
@@ -1122,13 +643,6 @@ endif(ENABLE_USE_GPERF)
 # create config.h file
 configure_file(${PROJECT_SOURCE_DIR}/Config/config.h.in.cmake ${CMAKE_BINARY_DIR}/Config/config.h)
 
-endif(NOT WIN32)
-
-if(WIN32)
-    # create config_win.h file
-    configure_file(${PROJECT_SOURCE_DIR}/Config/config_win.h.in.cmake ${CMAKE_BINARY_DIR}/Config/config_win.h)
-endif(WIN32)
-
 # add includes
 include_directories(${INCLUDES})
 include_directories(${PROJECT_SOURCE_DIR})
@@ -1164,14 +678,12 @@ set(libpalo_DIR_LIST
     Programs
 )
 
-if (NOT WIN32)
 set(libpalo_DIR_LIST
 	${libpalo_DIR_LIST}
     Library/Network
     Library/Network/HttpClient
     Library/Network/TcpDevice
 )
-endif(NOT WIN32)
 
 CollectFilesForLib("${libpalo_DIR_LIST}" LIBPALO_FILES)
 
@@ -1194,129 +706,38 @@ else(ENABLE_HTTPS STREQUAL Builtin)
     endif(ENABLE_HTTPS STREQUAL Module)
 endif(ENABLE_HTTPS STREQUAL Builtin)
 
-# license extension
-if(ENABLE_LICENSE_EXT STREQUAL ON)
-    set(licext_DIR_LIST Library/License)
-    CollectFilesForLib("${licext_DIR_LIST}" LICEXT_FILES)
-endif(ENABLE_LICENSE_EXT STREQUAL ON)
-
-# olap gpu accelerator
-if(ENABLE_GPU_SERVER STREQUAL ON)
-    set(palogpu_DIR_LIST
-       Library/EngineGpu
-       Library/PaloGpuJobs
-       Library/PaloGpu/GpuEngine
-       Library/PaloGpu/GpuStorage
-       Library/PaloGpu/KernelUtils
-       Library/PaloGpu/palo_gpu_rules.h
-       Library/PaloGpu/palo_gpu.h
-    )
-    CollectFilesForLib("${palogpu_DIR_LIST}" LIBPALOGPU_FILES)
-    set(cu_KERNEL_UTILS Library/PaloGpu/KernelUtils)
-    CollectCudaFilesInDir(${cu_KERNEL_UTILS} CU_KERNEL_UTILS_FILES)
-    set(cu_KERNEL Library/GpuKernels)
-    CollectCudaFilesInDir(${cu_KERNEL} CU_KERNEL_FILES)
-    set(CU_FILES ${CU_KERNEL_UTILS_FILES} ${CU_KERNEL_FILES})
-    cuda_compile(CUDA_FILES ${CU_FILES})
-    set(LIBPALO_FILES ${LIBPALO_FILES} ${LIBPALOGPU_FILES} ${CUDA_FILES} ${CU_FILES})
-    #set(LIBS ${LIBS} ${CUDA_LIBRARIES})
-endif(ENABLE_GPU_SERVER STREQUAL ON)
-
-if(WIN32)
-    # Library/Engine/StorageCpu.cpp should be compiled with /fp:precise flag
-    set_property(SOURCE Library/Engine/StorageCpu.cpp PROPERTY COMPILE_FLAGS /fp:precise)
-
-    # add target paloserver.dll
-    source_group(Resource FILES ${CMAKE_BINARY_DIR}/Resource/paloserverlib.rc ${CMAKE_BINARY_DIR}/Resource/resource.h)
-    add_library(paloserver SHARED ${LIBPALO_FILES} palo.h ${CMAKE_BINARY_DIR}/Resource/paloserverlib.rc)
-    target_link_libraries(paloserver ${LIBS})
-    set_target_properties(paloserver PROPERTIES COMPILE_FLAGS "/DEXPORTING_SERVER /DIMPORTING_HTTPS" LINK_FLAGS "/INCREMENTAL:NO /NOLOGO /SUBSYSTEM:WINDOWS /DEBUG /STACK:10000000")
-
-     if(ENABLE_HTTPS STREQUAL Module)
-        # add target palohttps.dll
-        source_group(Resource FILES ${CMAKE_BINARY_DIR}/Resource/palohttpslib.rc ${CMAKE_BINARY_DIR}/Resource/resource.h)
-        set(MODULE_FILES palo.h Library/System/system-vs-net-2003.h ${CMAKE_BINARY_DIR}/Resource/palohttpslib.rc ${MODULE_FILES})
-        add_library(palohttps SHARED ${MODULE_FILES})
-        target_link_libraries(palohttps ${OPENSSL_LIBS} paloserver ws2_32.lib)
-        set_target_properties(palohttps PROPERTIES COMPILE_FLAGS "/DIMPORTING_SERVER /DEXPORTING_HTTPS" LINK_FLAGS "/INCREMENTAL:NO /NOLOGO /SUBSYSTEM:WINDOWS /DEBUG")
-    endif(ENABLE_HTTPS STREQUAL Module)
-
-    if(ENABLE_LICENSE_EXT STREQUAL ON)
-        # add target palolic.dll
-        configure_file(${PROJECT_SOURCE_DIR}/Resource/paloliclib.rc.cmake ${CMAKE_BINARY_DIR}/Resource/paloliclib.rc)
-        source_group(Resource FILES ${CMAKE_BINARY_DIR}/Resource/paloliclib.rc ${CMAKE_BINARY_DIR}/Resource/resource.h)
-        set(LICEXT_FILES palo.h Library/System/system-vs-net-2003.h ${CMAKE_BINARY_DIR}/Resource/paloliclib.rc Library/InputOutput/FileUtils.cpp ${LICEXT_FILES})
-        add_library(palolic SHARED ${LICEXT_FILES})
-        target_link_libraries(palolic paloserver)
-        set_target_properties(palolic PROPERTIES COMPILE_FLAGS "/DIMPORTING_SERVER /DEXPORTING_LIC" LINK_FLAGS "/INCREMENTAL:NO /NOLOGO /SUBSYSTEM:WINDOWS /DEBUG")
-    endif(ENABLE_LICENSE_EXT STREQUAL ON)
-
-    # add target palo.exe
-    source_group(Resource FILES ${CMAKE_BINARY_DIR}/Resource/paloserver.rc ${CMAKE_BINARY_DIR}/Resource/resource.h)
-    set(EXE_FILES Programs/palorun.cpp Library/System/system-vs-net-2003.h palo.h ${CMAKE_BINARY_DIR}/Resource/paloserver.rc)
-    add_executable(palo ${EXE_FILES})
-    set_target_properties(palo PROPERTIES LINK_FLAGS "/INCREMENTAL:NO /NOLOGO /SUBSYSTEM:CONSOLE /DEBUG /STACK:10000000")
-    add_dependencies(palo paloserver)
-    add_dependencies(palo palohttps)
-    if(ENABLE_LICENSE_EXT STREQUAL ON)
-        add_dependencies(palo palolic)
-    endif(ENABLE_LICENSE_EXT STREQUAL ON)
-
-else(WIN32)
-
-    if(ENABLE_HTTPS STREQUAL Module)
-
-        add_custom_target(clean.https.palo COMMAND rm -f ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libhttps.palo.so.${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH} VERBATIM)
-        add_library(https.palo MODULE ${MODULE_FILES})
-        target_link_libraries(https.palo ${OPENSSL_LIBS})
-        if(SSL_LIBRARY)
-            set_target_properties(https.palo PROPERTIES LINK_FLAGS -Wl,-Bsymbolic VERSION ${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH} SOVERSION 0)
-        else(SSL_LIBRARY)
-            set_target_properties(https.palo PROPERTIES VERSION ${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH} SOVERSION 0)
-        endif(SSL_LIBRARY)
-
-        if(PROJECT_BUILD_TYPE STREQUAL RelWithDebInfo)
-            add_dependencies(https.palo clean.https.palo)
-            add_custom_target(debug.https.palo ALL COMMAND objcopy --only-keep-debug libhttps.palo.so.${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH} libhttps.palo.dbg
-                                                   COMMAND objcopy --strip-debug --strip-unneeded libhttps.palo.so.${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH}
-                                                   COMMAND objcopy --add-gnu-debuglink=libhttps.palo.dbg libhttps.palo.so.${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH}
-                                                   WORKING_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} VERBATIM)
-            add_dependencies(debug.https.palo https.palo)
-        endif(PROJECT_BUILD_TYPE STREQUAL RelWithDebInfo)
-
-    endif(ENABLE_HTTPS STREQUAL Module)
-
-    if(ENABLE_LICENSE_EXT STREQUAL ON)
-        add_custom_target(clean.lic.palo COMMAND rm -f ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/liblic.palo.so.${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH} VERBATIM)
-        add_library(lic.palo MODULE ${LICEXT_FILES})
-        target_link_libraries(lic.palo ${LIC_LIBS})
-        set_target_properties(lic.palo PROPERTIES VERSION ${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH} SOVERSION 0)
-
-        if(PROJECT_BUILD_TYPE STREQUAL RelWithDebInfo)
-            add_dependencies(lic.palo clean.lic.palo)
-            add_custom_target(debug.lic.palo ALL COMMAND objcopy --only-keep-debug liblic.palo.so.${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH} liblic.palo.dbg
-                                                 COMMAND objcopy --strip-debug --strip-unneeded liblic.palo.so.${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH}
-                                                 COMMAND objcopy --add-gnu-debuglink=liblic.palo.dbg liblic.palo.so.${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH}
-                                                 WORKING_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} VERBATIM)
-            add_dependencies(debug.lic.palo lic.palo)
-        endif(PROJECT_BUILD_TYPE STREQUAL RelWithDebInfo)
-
-    endif(ENABLE_LICENSE_EXT STREQUAL ON)
-
-    add_custom_target(clean.${PACKAGE} COMMAND rm -f ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PACKAGE} VERBATIM)
-    add_executable(${PACKAGE} ${LIBPALO_FILES})
-    target_link_libraries(${PACKAGE} ${LIBS})
+if(ENABLE_HTTPS STREQUAL Module)
+    add_custom_target(clean.https.palo COMMAND rm -f ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libhttps.palo.so.${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH} VERBATIM)
+    add_library(https.palo MODULE ${MODULE_FILES})
+    target_link_libraries(https.palo ${OPENSSL_LIBS})
+    if(SSL_LIBRARY)
+        set_target_properties(https.palo PROPERTIES LINK_FLAGS -Wl,-Bsymbolic VERSION ${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH} SOVERSION 0)
+    else(SSL_LIBRARY)
+        set_target_properties(https.palo PROPERTIES VERSION ${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH} SOVERSION 0)
+    endif(SSL_LIBRARY)
 
     if(PROJECT_BUILD_TYPE STREQUAL RelWithDebInfo)
-        add_dependencies(${PACKAGE} clean.${PACKAGE})
-        add_custom_target(debug.${PACKAGE} ALL COMMAND objcopy --only-keep-debug ${PACKAGE} ${PACKAGE}.dbg
-                                               COMMAND objcopy --strip-debug --strip-unneeded ${PACKAGE}
-                                               COMMAND objcopy --add-gnu-debuglink=${PACKAGE}.dbg ${PACKAGE}
-                                               WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} VERBATIM)
-        add_dependencies(debug.${PACKAGE} ${PACKAGE})
+        add_dependencies(https.palo clean.https.palo)
+        add_custom_target(debug.https.palo ALL COMMAND objcopy --only-keep-debug libhttps.palo.so.${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH} libhttps.palo.dbg
+                                                COMMAND objcopy --strip-debug --strip-unneeded libhttps.palo.so.${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH}
+                                                COMMAND objcopy --add-gnu-debuglink=libhttps.palo.dbg libhttps.palo.so.${PALO_MAJOR}.${PALO_MINOR}.${HTTPS_PATCH}
+                                                WORKING_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} VERBATIM)
+        add_dependencies(debug.https.palo https.palo)
     endif(PROJECT_BUILD_TYPE STREQUAL RelWithDebInfo)
+endif(ENABLE_HTTPS STREQUAL Module)
 
-endif(WIN32)
+add_custom_target(clean.${PACKAGE} COMMAND rm -f ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PACKAGE} VERBATIM)
+add_executable(${PACKAGE} ${LIBPALO_FILES})
+target_link_libraries(${PACKAGE} ${LIBS})
+
+if(PROJECT_BUILD_TYPE STREQUAL RelWithDebInfo)
+    add_dependencies(${PACKAGE} clean.${PACKAGE})
+    add_custom_target(debug.${PACKAGE} ALL COMMAND objcopy --only-keep-debug ${PACKAGE} ${PACKAGE}.dbg
+                                            COMMAND objcopy --strip-debug --strip-unneeded ${PACKAGE}
+                                            COMMAND objcopy --add-gnu-debuglink=${PACKAGE}.dbg ${PACKAGE}
+                                            WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} VERBATIM)
+    add_dependencies(debug.${PACKAGE} ${PACKAGE})
+endif(PROJECT_BUILD_TYPE STREQUAL RelWithDebInfo)
 
 ################################################################################
 ### enable doxygen to create documentation
@@ -1351,13 +772,6 @@ else()
     endif()
 endif()
 
-if(ENABLE_LICENSE_EXT STREQUAL OFF)
-    message(STATUS "Configuring: palolic extension is disabled")
-else()
-    message(STATUS "Configuring: palolic extension compiled as shared library")
-endif()
-
-if(NOT WIN32)
 message(STATUS "Configuring: Current project build type is: ${PROJECT_BUILD_TYPE}")
 if(BISON_RuleParser_OK)
     message(STATUS "Configuring: BISON is available: ${BISON_EXECUTABLE}")
@@ -1402,71 +816,5 @@ endif()
 message(STATUS "Configuring: LIBS: ${LIBS}")
 message(STATUS "Configuring: OPENSSL_LIBS: ${OPENSSL_LIBS}")
 
-if(ENABLE_LICENSE_EXT STREQUAL ON)
-    message(STATUS "Configuring: LIC_LIBS: ${LIC_LIBS}")
-endif()
 message(STATUS "Configuring: verbose make files is: ${CMAKE_VERBOSE_MAKEFILE}")
-endif(NOT WIN32)
 message(STATUS "======================================================")
-
-################################################################################
-### CPack
-################################################################################
-
-if(WIN32)
-    install(TARGETS palo paloserver palohttps
-        RUNTIME DESTINATION ./
-        LIBRARY DESTINATION ./
-        #ARCHIVE DESTINATION ${CMAKE_BINARY_DIR}/archive
-        )
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/palo.pdb
-                  ${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/paloserver.pdb
-                  ${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/palohttps.pdb
-                  DESTINATION ./)
-    # license extension
-    if(ENABLE_LICENSE_EXT STREQUAL ON)
-          install(TARGETS palolic
-              RUNTIME DESTINATION ./
-              LIBRARY DESTINATION ./)
-          install(FILES ${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/palolic.pdb DESTINATION ./)
-    endif(ENABLE_LICENSE_EXT STREQUAL ON)
-
-    set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
-    set(CPACK_GENERATOR "ZIP")
-else(WIN32)
-    install(DIRECTORY ${CMAKE_BINARY_DIR}/usr DESTINATION ./ USE_SOURCE_PERMISSIONS)
-    set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
-    set(CPACK_GENERATOR "TGZ")
-endif(WIN32)
-
-set(CPACK_PACKAGE_NAME ${PACKAGE})
-if(ENABLE_TRACE_OPTION)
-    set(CPACK_PACKAGE_FILE_NAME "${PACKAGE}-${CMAKE_SYSTEM_NAME}-${ARCH}-${PACKAGE_VERSION}.${REVISION}.trace_on")
-else(ENABLE_TRACE_OPTION)
-    set(CPACK_PACKAGE_FILE_NAME "${PACKAGE}-${CMAKE_SYSTEM_NAME}-${ARCH}-${PACKAGE_VERSION}.${REVISION}")
-endif(ENABLE_TRACE_OPTION)
-#message(STATUS ${CPACK_PACKAGE_FILE_NAME})
-set(CPACK_PACKAGE_VENDOR "Jedox AG")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "PALO - OpenSource MOLAP (www.palo.net)")
-set(CPACK_PACKAGE_VERSION ${PACKAGE_VERSION})
-set(CPACK_PACKAGE_VERSION_MAJOR ${PALO_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${PALO_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${PALO_PATCH})
-set(CPACK_PACKAGE_EXECUTABLES ${PACKAGE})
-#set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/license.txt")
-#set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README")
-
-#deb package
-set(CPACK_PACKAGE_CONTACT ${PACKAGE_BUGREPORT})
-# TODO: add dependencies
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
-set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "${ARCH}")
-set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
-set(CPACK_DEBIAN_PACKAGE_SECTION "Miscellaneous")
-
-set(CPACK_RPM_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION})
-#set(CPACK_RPM_PACKAGE_ARCHITECTURE  "${ARCH}")
-set(CPACK_RPM_PACKAGE_REQUIRES  "")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "PALO - OpenSource MOLAP (www.palo.net)")
-set(CPACK_PACKAGE_DESCRIPTION "bla bla")
-include(CPack)
