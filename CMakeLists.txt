@@ -61,11 +61,11 @@ include(UserFunctions)
 
 # Parsing errors more efficiently extra for eclipse
 if(CMAKE_COMPILER_IS_GNUCC)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fmessage-length=0")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fmessage-length=0 -DU_USING_ICU_NAMESPACE=1")
 endif(CMAKE_COMPILER_IS_GNUCC)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmessage-length=0")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmessage-length=0 -DU_USING_ICU_NAMESPACE=1")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 ################################################################################
@@ -136,14 +136,14 @@ message(STATUS "to change project build type use -DPROJECT_BUILD_TYPE={Release|D
 
 if(CMAKE_BUILD_TYPE STREQUAL Release)
     set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG -std=c++0x")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 else(CMAKE_BUILD_TYPE STREQUAL Release)
     if(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
         set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g3 -ggdb -O2 -D_DEBUG")
-        set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g3 -ggdb -O2 -D_DEBUG -std=c++0x")
+        set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g3 -ggdb -O2 -D_DEBUG")
     else(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
         set(CMAKE_C_FLAGS_DEBUG "-gdwarf-4 -fvar-tracking-assignments -O0 -D_DEBUG")
-        set(CMAKE_CXX_FLAGS_DEBUG "-gdwarf-4 -fvar-tracking-assignments -O0 -D_DEBUG -std=c++0x")
+        set(CMAKE_CXX_FLAGS_DEBUG "-gdwarf-4 -fvar-tracking-assignments -O0 -D_DEBUG")
     endif(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
 endif(CMAKE_BUILD_TYPE STREQUAL Release)
 
@@ -258,7 +258,7 @@ endif(ZLIB_FOUND)
 ### option for enabling the https interface as builtin or shared library
 ################################################################################
 
-set(ENABLE_HTTPS "Builtin" CACHE STRING "Select to enable building the https interface as builtin or shared module")
+set(ENABLE_HTTPS "Module" CACHE STRING "Select to enable building the https interface as builtin or shared module")
 set_property(CACHE ENABLE_HTTPS PROPERTY STRINGS "Builtin" "Module")
 
 if(ENABLE_HTTPS STREQUAL Module)
